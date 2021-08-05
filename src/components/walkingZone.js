@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable default-case */
 import React, { useEffect } from 'react'
-import * as THREE from '../../node_modules/three/build/three.module' //'../util/three.module'
+import * as THREE from '../../node_modules/three/build/three.module'
 import { PointerLockControls } from '../controls/PointerLockControls'
 
 function WalkingZone() {
@@ -22,17 +22,13 @@ function WalkingZone() {
     const vertex = new THREE.Vector3();
     const color = new THREE.Color();
 
-    init();
-    animate();
-
     function init() {
-
         camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
         camera.position.y = 10;
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color( 0xffffff );
-        scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
+        scene.fog = new THREE.Fog( 0xffffff, 0, 100 );
 
         const light = new THREE.HemisphereLight( 0xeeeeff, 0x777788, 0.75 );
         light.position.set( 0.5, 1, 0.75 );
@@ -62,9 +58,7 @@ function WalkingZone() {
         scene.add( controls.getObject() );
 
         const onKeyDown = function ( event ) {
-
             switch ( event.code ) {
-
                 case 'ArrowUp':
                 case 'KeyW':
                     moveForward = true;
@@ -89,15 +83,11 @@ function WalkingZone() {
                     if ( canJump === true ) velocity.y += 350;
                     canJump = false;
                     break;
-
             }
-
         };
 
         const onKeyUp = function ( event ) {
-
             switch ( event.code ) {
-
                 case 'ArrowUp':
                 case 'KeyW':
                     moveForward = false;
@@ -117,9 +107,7 @@ function WalkingZone() {
                 case 'KeyD':
                     moveRight = false;
                     break;
-
             }
-
         };
 
         document.addEventListener( 'keydown', onKeyDown );
@@ -128,63 +116,57 @@ function WalkingZone() {
         raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
 
         // floor
-
         let floorGeometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
-        floorGeometry.rotateX( - Math.PI / 2 );
+        // floorGeometry.rotateX( - Math.PI / 2 );
+
 
         // vertex displacement
-
         let position = floorGeometry.attributes.position;
 
-        for ( let i = 0, l = position.count; i < l; i ++ ) {
+        // for ( let i = 0, l = position.count; i < l; i ++ ) {
 
-            vertex.fromBufferAttribute( position, i );
+        //     vertex.fromBufferAttribute( position, i );
 
-            vertex.x += Math.random() * 20 - 10;
-            vertex.y += Math.random() * 2;
-            vertex.z += Math.random() * 20 - 10;
+        //     vertex.x += Math.random() * 20 - 10;
+        //     vertex.y += Math.random() * 2;
+        //     vertex.z += Math.random() * 20 - 10;
 
-            position.setXYZ( i, vertex.x, vertex.y, vertex.z );
+        //     position.setXYZ( i, vertex.x, vertex.y, vertex.z );
 
-        }
+        // }
 
         floorGeometry = floorGeometry.toNonIndexed(); // ensure each face has unique vertices
 
         position = floorGeometry.attributes.position;
-        const colorsFloor = [];
+        // const colorsFloor = [];
 
-        for ( let i = 0, l = position.count; i < l; i ++ ) {
+        // for ( let i = 0, l = position.count; i < l; i ++ ) {
+        //     color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+        //     colorsFloor.push( color.r, color.g, color.b );
+        // }
 
-            color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-            colorsFloor.push( color.r, color.g, color.b );
+        // floorGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsFloor, 3 ) );
 
-        }
+        // const floorMaterial = new THREE.MeshBasicMaterial( { vertexColors: true } );
 
-        floorGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsFloor, 3 ) );
+        // const floor = new THREE.Mesh( floorGeometry, floorMaterial );
+        // scene.add( floor );
 
-        const floorMaterial = new THREE.MeshBasicMaterial( { vertexColors: true } );
-
-        const floor = new THREE.Mesh( floorGeometry, floorMaterial );
-        scene.add( floor );
 
         // objects
-
         const boxGeometry = new THREE.BoxGeometry( 20, 20, 20 ).toNonIndexed();
 
         position = boxGeometry.attributes.position;
         const colorsBox = [];
 
         for ( let i = 0, l = position.count; i < l; i ++ ) {
-
             color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
             colorsBox.push( color.r, color.g, color.b );
-
         }
 
         boxGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsBox, 3 ) );
 
         for ( let i = 0; i < 500; i ++ ) {
-
             const boxMaterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: true } );
             boxMaterial.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
 
@@ -195,20 +177,14 @@ function WalkingZone() {
 
             scene.add( box );
             objects.push( box );
-
         }
-
-        //
 
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
 
-        //
-
         window.addEventListener( 'resize', onWindowResize );
-
     }
 
     function onWindowResize() {
@@ -286,17 +262,30 @@ function WalkingZone() {
             camera.updateProjectionMatrix()
             renderer.setSize(window.innerWidth, window.innerHeight)
         }
+
+        // mounting
         init()
         animate()
         window.addEventListener('resize', handleResize, false)
+
+        // unmounting
         return () => {
             window.removeEventListener('resize', handleResize, false)
         }
     }, [])
 
     return (
-        <div>
-            
+        <div id="blocker">
+            <div id="instructions">
+                <p className='playText'>
+                    Click to play
+                </p>
+                <p>
+                    Move: WASD<br/>
+                    Jump: SPACE<br/>
+                    Look: MOUSE
+                </p>
+            </div>
         </div>
     )
 }

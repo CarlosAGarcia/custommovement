@@ -19,7 +19,7 @@ function WalkingZone() {
     let prevTime = performance.now();
     const velocity = new THREE.Vector3();
     const direction = new THREE.Vector3();
-    const vertex = new THREE.Vector3();
+    // const vertex = new THREE.Vector3();
     const color = new THREE.Color();
 
     function init() {
@@ -38,8 +38,6 @@ function WalkingZone() {
 
         const blocker = document.getElementById( 'blocker' );
         const instructions = document.getElementById( 'instructions' );
-
-        console.log('instructions', instructions)
 
         instructions.addEventListener( 'click', function () {
             controls.lock();
@@ -234,7 +232,10 @@ function WalkingZone() {
 
             controls.moveRight( - velocity.x * delta );
             controls.moveForward( - velocity.z * delta );
-
+            
+            console.log({pos: controls.getObject().position})
+            console.log({cam: camera})
+            
             controls.getObject().position.y += ( velocity.y * delta ); // new behavior
 
             if ( controls.getObject().position.y < 10 ) {

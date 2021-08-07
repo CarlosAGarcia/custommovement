@@ -22,6 +22,7 @@ function WalkingZone() {
     // const vertex = new THREE.Vector3();
     const color = new THREE.Color();
 
+    // initial placement of scene + objects
     function init() {
         camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
         camera.position.y = 10;
@@ -163,6 +164,7 @@ function WalkingZone() {
         }
 
         boxGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsBox, 3 ) );
+        // setColorsBox(colorsBox)
 
         for ( let i = 0; i < 500; i ++ ) {
             const boxMaterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: true } );
@@ -194,6 +196,7 @@ function WalkingZone() {
 
     }
 
+    // animate function creates an infinite loop to req new animation frames for scene
     function animate() {
 
         requestAnimationFrame( animate );

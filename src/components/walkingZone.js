@@ -7,9 +7,10 @@ import { PointerLockControls } from '../controls/PointerLockControls'
 function WalkingZone() {
     let camera, scene, renderer, controls;
     const objects = [];
-
     let raycaster;
 
+    let crouchToggle = false;
+    let sprintToggle = false;
     let moveForward = false;
     let moveBackward = false;
     let moveLeft = false;
@@ -58,6 +59,15 @@ function WalkingZone() {
 
         const onKeyDown = function ( event ) {
             switch ( event.code ) {
+                case 'ControlLeft':
+                case 'ControlRight':
+                    if (!crouchToggle) crouchToggle = true
+                    break;
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    if (!sprintToggle) sprintToggle = true 
+                    break;
+
                 case 'ArrowUp':
                 case 'KeyW':
                     moveForward = true;
@@ -87,6 +97,14 @@ function WalkingZone() {
 
         const onKeyUp = function ( event ) {
             switch ( event.code ) {
+                case 'ControlLeft':
+                case 'ControlRight':
+                    if (crouchToggle) crouchToggle = false 
+                    break;
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    if (sprintToggle) sprintToggle = false
+                    break;
                 case 'ArrowUp':
                 case 'KeyW':
                     moveForward = false;
@@ -223,8 +241,17 @@ function WalkingZone() {
             direction.x = Number( moveRight ) - Number( moveLeft );
             direction.normalize(); // this ensures consistent movements in all directions
 
+
             if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
             if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+            if (sprintToggle) {
+                velocity.x = velocity.x * 1.2
+                velocity.z = velocity.z * 1.2
+            }
+            if (crouchToggle) {
+                sprintToggle = false
+                camera.position.y -= 5
+            }
 
             if ( onObject === true ) {
 
@@ -236,15 +263,14 @@ function WalkingZone() {
             controls.moveRight( - velocity.x * delta );
             controls.moveForward( - velocity.z * delta );
             
-            console.log({pos: controls.getObject().position})
-            console.log({cam: camera})
-            
             controls.getObject().position.y += ( velocity.y * delta ); // new behavior
+
+            console.log({posY: camera.position.y, crouchToggle})
 
             if ( controls.getObject().position.y < 10 ) {
 
                 velocity.y = 0;
-                controls.getObject().position.y = 10;
+                controls.getObject().position.y = crouchToggle ? 5 : 10;
 
                 canJump = true;
 
@@ -288,6 +314,8 @@ function WalkingZone() {
                     Move: WASD<br/>
                     Jump: SPACE<br/>
                     Look: MOUSE
+                    Sprint: HOLD SHIFT
+                    Crouch: HOLD CTRL
                 </p>
             </div>
         </div>

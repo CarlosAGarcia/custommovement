@@ -1,10 +1,13 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable default-case */
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import * as THREE from '../../node_modules/three/build/three.module'
 import { PointerLockControls } from '../controls/PointerLockControls'
 
 function WalkingZone() {
+    const [cameraPosSnapshot, setCameraPosSnapshot] = useState({ furthestX: 0, furthestY: 0, furthestZ: 0, interval: 0 })
+
+
     let camera, scene, renderer, controls;
     const objects = [];
     let raycaster;
@@ -23,10 +26,62 @@ function WalkingZone() {
     // const vertex = new THREE.Vector3();
     const color = new THREE.Color();
 
+    const addNewItems = (interval) => {
+        let furthestX = 0
+        let furthestY = 0
+        let furthestZ = 0
+
+        // floor
+        let floorGeometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
+
+        // vertex displacement
+        let position = floorGeometry.attributes.position;
+        floorGeometry = floorGeometry.toNonIndexed(); // ensure each face has unique vertices
+        position = floorGeometry.attributes.position;
+
+        // objects
+        const boxGeometry = new THREE.BoxGeometry( 20, 20, 20 ).toNonIndexed();
+
+        position = boxGeometry.attributes.position;
+        const colorsBox = [];
+
+        for ( let i = 0, l = position.count; i < l; i ++ ) {
+            color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+            colorsBox.push( color.r, color.g, color.b );
+        }
+
+        boxGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsBox, 3 ) );
+
+        const boxMaterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: true } );
+        
+        for ( let i = 0; i < 500; i ++ ) {
+            boxMaterial.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+    
+            const box = new THREE.Mesh( boxGeometry, boxMaterial );
+            
+            box.position.x = Math.floor( Math.random() * 20 - 10 ) * 20 + camera.position.x; // x pos is -10 - 10 + (current position) so it's always within this range of values away from current pos
+            box.position.y = Math.floor( Math.random() * 20 ) * 20 + 10 + camera.position.y; // y pos is 10 - 4000 + (current position)
+            box.position.z = Math.floor( Math.random() * 20 - 10 ) * 20 + camera.position.z; // z pos is -10 - 10 + (current position)
+              
+            if (Math.abs(furthestX) < Math.abs(box.position.x) ) furthestX = box.position.x
+            if (Math.abs(furthestY) < Math.abs(box.position.y) ) furthestY = box.position.y
+            if (Math.abs(furthestZ) < Math.abs(box.position.z) ) furthestZ = box.position.z
+
+            box.position.interval = interval + 1
+
+            scene.add( box );
+            objects.push( box );
+        }  
+
+        setCameraPosSnapshot({ furthestX, furthestY, furthestZ, interval: interval + 1 })
+    }
+
     // initial placement of scene + objects
     function init() {
         camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
         camera.position.y = 10;
+        
+        setCameraPosSnapshot({ furthestX: camera.position.x, furthestY: camera.position.y, furthestZ: camera.position.z, interval: 0 })
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color( 0xffffff );
@@ -132,86 +187,21 @@ function WalkingZone() {
 
         raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
 
-        // floor
-        let floorGeometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
-        // floorGeometry.rotateX( - Math.PI / 2 );
-
-
-        // vertex displacement
-        let position = floorGeometry.attributes.position;
-
-        // for ( let i = 0, l = position.count; i < l; i ++ ) {
-
-        //     vertex.fromBufferAttribute( position, i );
-
-        //     vertex.x += Math.random() * 20 - 10;
-        //     vertex.y += Math.random() * 2;
-        //     vertex.z += Math.random() * 20 - 10;
-
-        //     position.setXYZ( i, vertex.x, vertex.y, vertex.z );
-
-        // }
-
-        floorGeometry = floorGeometry.toNonIndexed(); // ensure each face has unique vertices
-
-        position = floorGeometry.attributes.position;
-        // const colorsFloor = [];
-
-        // for ( let i = 0, l = position.count; i < l; i ++ ) {
-        //     color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-        //     colorsFloor.push( color.r, color.g, color.b );
-        // }
-
-        // floorGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsFloor, 3 ) );
-
-        // const floorMaterial = new THREE.MeshBasicMaterial( { vertexColors: true } );
-
-        // const floor = new THREE.Mesh( floorGeometry, floorMaterial );
-        // scene.add( floor );
-
-
-        // objects
-        const boxGeometry = new THREE.BoxGeometry( 20, 20, 20 ).toNonIndexed();
-
-        position = boxGeometry.attributes.position;
-        const colorsBox = [];
-
-        for ( let i = 0, l = position.count; i < l; i ++ ) {
-            color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-            colorsBox.push( color.r, color.g, color.b );
-        }
-
-        boxGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsBox, 3 ) );
-        // setColorsBox(colorsBox)
-
-        for ( let i = 0; i < 500; i ++ ) {
-            const boxMaterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: true } );
-            boxMaterial.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-
-            const box = new THREE.Mesh( boxGeometry, boxMaterial );
-            box.position.x = Math.floor( Math.random() * 20 - 10 ) * 20;
-            box.position.y = Math.floor( Math.random() * 20 ) * 20 + 10;
-            box.position.z = Math.floor( Math.random() * 20 - 10 ) * 20;
-
-            scene.add( box );
-            objects.push( box );
-        }
-
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
 
+        addNewItems(0) // adds the initial objects at index 0
+
         window.addEventListener( 'resize', onWindowResize );
     }
 
     function onWindowResize() {
-
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
 
         renderer.setSize( window.innerWidth, window.innerHeight );
-
     }
 
     // animate function creates an infinite loop to req new animation frames for scene
@@ -241,11 +231,10 @@ function WalkingZone() {
             direction.x = Number( moveRight ) - Number( moveLeft );
             direction.normalize(); // this ensures consistent movements in all directions
 
-
             if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
             if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
             if (sprintToggle) {
-                velocity.x = velocity.x * 1.2
+                velocity.x = velocity.x * (1.2)
                 velocity.z = velocity.z * 1.2
             }
             if (crouchToggle) {
@@ -254,10 +243,8 @@ function WalkingZone() {
             }
 
             if ( onObject === true ) {
-
                 velocity.y = Math.max( 0, velocity.y );
                 canJump = true;
-
             }
 
             controls.moveRight( - velocity.x * delta );
@@ -265,7 +252,23 @@ function WalkingZone() {
             
             controls.getObject().position.y += ( velocity.y * delta ); // new behavior
 
-            console.log({posY: camera.position.y, crouchToggle})
+
+            // creates values to see if unit has travelled X units in some direction
+            const { furthestX, furthestY, furthestZ, interval } = cameraPosSnapshot
+            const { x, y, z } = camera.position
+
+            console.log({ x, y, z, furthestX, furthestY, furthestZ, interval })
+
+            const is3UnitsAwayEdgeX =  Math.abs(furthestX) - Math.abs(x) <= 4 // if its within 4 units of edge of x
+            const is3UnitsAwayEdgeY =  Math.abs(furthestY) - Math.abs(y) <= 4 // if its within 4 units of edge of y
+            const is3UnitsAwayEdgeZ =  Math.abs(furthestZ) - Math.abs(z) <= 4 // if its within 4 units of edge of z
+
+            const isNearEdge = is3UnitsAwayEdgeX || is3UnitsAwayEdgeY || is3UnitsAwayEdgeZ
+            if (isNearEdge) {
+                // snapshot creates a new area of blocks + returns a snapshot of the current furthest units spawned
+                // addNewItems(interval)
+            }
+
 
             if ( controls.getObject().position.y < 10 ) {
 

@@ -1,15 +1,18 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable default-case */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import * as THREE from '../../node_modules/three/build/three.module'
 import { PointerLockControls } from '../controls/PointerLockControls'
 
 function WalkingZone() {
-    const [cameraPosSnapshot, setCameraPosSnapshot] = useState({ furthestX: 0, furthestY: 0, furthestZ: 0, interval: 0 })
+    // const [cameraPosSnapshot, setCameraPosSnapshot] = useState()
 
+    let furthestX = 0
+    let furthestY = 0
+    let furthestZ = 0
 
     let camera, scene, renderer, controls;
-    const objects = [];
+    let objects = [];
     let raycaster;
 
     let crouchToggle = false;
@@ -23,14 +26,10 @@ function WalkingZone() {
     let prevTime = performance.now();
     const velocity = new THREE.Vector3();
     const direction = new THREE.Vector3();
-    // const vertex = new THREE.Vector3();
+
     const color = new THREE.Color();
 
-    const addNewItems = (interval) => {
-        let furthestX = 0
-        let furthestY = 0
-        let furthestZ = 0
-
+    const addNewItems = () => {
         // floor
         let floorGeometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
 
@@ -53,8 +52,13 @@ function WalkingZone() {
         boxGeometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colorsBox, 3 ) );
 
         const boxMaterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: true } );
-        
-        for ( let i = 0; i < 500; i ++ ) {
+
+        const amountObjectsAddedAtOnce = 500
+
+        let furthestXInner = 0
+        let furthestYInner = 0
+        let furthestZInner = 0
+        for ( let i = 0; i < amountObjectsAddedAtOnce; i ++ ) {
             boxMaterial.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
     
             const box = new THREE.Mesh( boxGeometry, boxMaterial );
@@ -63,25 +67,32 @@ function WalkingZone() {
             box.position.y = Math.floor( Math.random() * 20 ) * 20 + 10 + camera.position.y; // y pos is 10 - 4000 + (current position)
             box.position.z = Math.floor( Math.random() * 20 - 10 ) * 20 + camera.position.z; // z pos is -10 - 10 + (current position)
               
-            if (Math.abs(furthestX) < Math.abs(box.position.x) ) furthestX = box.position.x
-            if (Math.abs(furthestY) < Math.abs(box.position.y) ) furthestY = box.position.y
-            if (Math.abs(furthestZ) < Math.abs(box.position.z) ) furthestZ = box.position.z
+            if (Math.abs(furthestXInner) < Math.abs(box.position.x) ) furthestXInner = box.position.x
+            if (Math.abs(furthestYInner) < Math.abs(box.position.y) ) furthestYInner = box.position.y
+            if (Math.abs(furthestZInner) < Math.abs(box.position.z) ) furthestZInner = box.position.z
 
-            box.position.interval = interval + 1
+
 
             scene.add( box );
             objects.push( box );
-        }  
+        }
 
-        setCameraPosSnapshot({ furthestX, furthestY, furthestZ, interval: interval + 1 })
+        furthestX = furthestXInner
+        furthestY = furthestYInner
+        furthestZ = furthestZInner
+
+        // remove previous boxes from 5 gens ago
+        if (amountObjectsAddedAtOnce * 6 <= objects.length) {
+            const objectsToRemove = objects.slice(0, amountObjectsAddedAtOnce + 1)
+            objects = objects.slice(amountObjectsAddedAtOnce + 1)
+            scene.remove(objectsToRemove)
+        }
     }
 
     // initial placement of scene + objects
-    function init() {
+    async function init() {
         camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
         camera.position.y = 10;
-        
-        setCameraPosSnapshot({ furthestX: camera.position.x, furthestY: camera.position.y, furthestZ: camera.position.z, interval: 0 })
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color( 0xffffff );
@@ -192,7 +203,7 @@ function WalkingZone() {
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
 
-        addNewItems(0) // adds the initial objects at index 0
+        addNewItems() // adds the initial objects at index 0
 
         window.addEventListener( 'resize', onWindowResize );
     }
@@ -234,9 +245,16 @@ function WalkingZone() {
             if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
             if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
             if (sprintToggle) {
-                velocity.x = velocity.x * (1.2)
-                velocity.z = velocity.z * 1.2
+                const maxCombinedVelocity = 160
+                const combinedvelocity = Math.abs(velocity.x) + Math.abs(velocity.z)
+                const isUnderSpeedLimit = combinedvelocity < maxCombinedVelocity
+
+                velocity.x = velocity.x *  (isUnderSpeedLimit ? 1.2 : 1)
+                velocity.z = velocity.z * (isUnderSpeedLimit ? 1.2 : 1)
+
+                console.log('SPRINT', { x: Math.abs(velocity.x), z: Math.abs(velocity.z) })
             }
+
             if (crouchToggle) {
                 sprintToggle = false
                 camera.position.y -= 5
@@ -252,21 +270,23 @@ function WalkingZone() {
             
             controls.getObject().position.y += ( velocity.y * delta ); // new behavior
 
+            let isNearEdge = false
 
             // creates values to see if unit has travelled X units in some direction
-            const { furthestX, furthestY, furthestZ, interval } = cameraPosSnapshot
-            const { x, y, z } = camera.position
 
-            console.log({ x, y, z, furthestX, furthestY, furthestZ, interval })
+            const { x, y, z } = camera.position
 
             const is3UnitsAwayEdgeX =  Math.abs(furthestX) - Math.abs(x) <= 4 // if its within 4 units of edge of x
             const is3UnitsAwayEdgeY =  Math.abs(furthestY) - Math.abs(y) <= 4 // if its within 4 units of edge of y
             const is3UnitsAwayEdgeZ =  Math.abs(furthestZ) - Math.abs(z) <= 4 // if its within 4 units of edge of z
 
-            const isNearEdge = is3UnitsAwayEdgeX || is3UnitsAwayEdgeY || is3UnitsAwayEdgeZ
+            isNearEdge = is3UnitsAwayEdgeX || is3UnitsAwayEdgeY || is3UnitsAwayEdgeZ
+            console.log('isNear Edge', { isNearEdge, objects, sceneChil: scene.children })
+
+
             if (isNearEdge) {
                 // snapshot creates a new area of blocks + returns a snapshot of the current furthest units spawned
-                // addNewItems(interval)
+                addNewItems()
             }
 
 
@@ -288,17 +308,16 @@ function WalkingZone() {
     }
 
     // first/last render
-    useEffect(() => {
+    useEffect(async () => {
         const handleResize = () => {
-            console.log('RESIZING', { w: window.innerWidth, h: window.innerHeight })
             camera.aspect = window.innerWidth / window.innerHeight
             camera.updateProjectionMatrix()
             renderer.setSize(window.innerWidth, window.innerHeight)
         }
 
         // mounting
-        init()
-        animate()
+        await init().then(() => animate())
+        
         window.addEventListener('resize', handleResize, false)
 
         // unmounting
